@@ -1,0 +1,53 @@
+# verl SFT config — LOGIC-X-14B (Qwen3-14B base), full fine-tune
+#
+# Two-phase curriculum:
+#   phase 1: sft_atomic_tasks.parquet   (single-turn skill items)
+#   phase 2: sft_trajectories.parquet   (full multi-turn trajectories)
+#
+# Usage:
+#   torchrun --nproc_per_node 8 -m verl.trainer.sft_trainer \
+#       --config-path ./sft --config-name verl_sft_LOGIC-X-14B \
+#       data.train_files=train_data/LOGIC-X-14B/sft_atomic_tasks.parquet
+#
+# Memory notes for 14B: gradient checkpointing on, effective batch
+# 8 GPU x 1 micro-bs x 16 grad-accum = 128.
+
+data:
+  train_files: train_data/LOGIC-X-14B/sft_trajectories.parquet
+  val_files: null
+  micro_batch_size_per_gpu: 1
+  messages_key: messages
+  tools_key: tools
+  chat_template_kwargs:
+    enable_thinking: false
+  max_length: 6144
+  truncation: error
+  ignore_input_ids_mismatch: true
+
+model:
+  path: models/qwen3-14b
+  use_remove_padding: true
+  trust_remote_code: true
+
+optim:
+  optimizer: AdamW
+  optimizer_impl: torch.optim
+  lr: 5.0e-05
+  lr_warmup_steps_ratio: 0.1
+  weight_decay: 0.01
+  betas: [0.9, 0.95]
+  clip_grad: 1.0
+  lr_scheduler_type: cosine
+  min_lr_ratio: 0.0
+
+trainer:
+  default_local_dir: train/saves/LOGIC-X-14B
+  total_epochs: 2
+  project_name: LOGIC-X
+  experiment_name: sft-14b
+  logger: ["console"]
+  save_freq: 200
+  test_freq: -1
+  max_ckpt_to_keep: 3
+  n_gpus_per_node: 8
+  nnodes: 1

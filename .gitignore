@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*.egg-info/
+outputs/
+train/logs/
+train/saves/
+tools_bin/
